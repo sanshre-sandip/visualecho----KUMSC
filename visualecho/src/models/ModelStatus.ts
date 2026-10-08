@@ -3,9 +3,21 @@ import type { ModelDefinition } from "./ModelDefinition";
 export type ModelInstallState =
   | "not_installed"
   | "checking"
+  | "queued"
   | "downloading"
+  | "verifying"
   | "installed"
   | "error";
+
+export type ModelInstallErrorCode =
+  | "source_unavailable"
+  | "network"
+  | "interrupted"
+  | "insufficient_storage"
+  | "verification"
+  | "permission"
+  | "unsupported_device"
+  | "unknown";
 
 /** Download progress in the range 0..1, or null when unavailable. */
 export type ModelDownloadProgress = number | null;
@@ -15,6 +27,7 @@ export interface ModelStatus {
   state: ModelInstallState;
   progress: ModelDownloadProgress;
   error: string | null;
+  errorCode: ModelInstallErrorCode | null;
   installedVersion: string | null;
 }
 
@@ -33,6 +46,7 @@ export function createIdleModelStatus(definition: ModelDefinition): ModelStatus 
     state: definition.status,
     progress: null,
     error: null,
+    errorCode: null,
     installedVersion: definition.version,
   };
 }

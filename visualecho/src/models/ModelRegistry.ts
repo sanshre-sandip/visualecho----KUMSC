@@ -8,6 +8,7 @@ export const REGISTERED_MODEL_DEFINITIONS: readonly ModelDefinition[] = [
     type: "llm",
     description:
       "Local Gemma 4 language model used for word generation, speech evaluation, and drawing analysis.",
+    platform: "android",
   }),
   createModelDefinition({
     id: "whisper-local",
@@ -16,6 +17,7 @@ export const REGISTERED_MODEL_DEFINITIONS: readonly ModelDefinition[] = [
     description:
       "Local Whisper model used for on-device speech-to-text transcription.",
     required: true,
+    platform: "android",
   }),
   createModelDefinition({
     id: "tts-local",
@@ -24,6 +26,7 @@ export const REGISTERED_MODEL_DEFINITIONS: readonly ModelDefinition[] = [
     description:
       "Local text-to-speech model (Kokoro or Piper) used for pronunciation playback.",
     required: true,
+    platform: "android",
   }),
 ];
 

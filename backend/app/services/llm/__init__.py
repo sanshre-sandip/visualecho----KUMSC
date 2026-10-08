@@ -10,21 +10,19 @@ from app.services.llm.base import (
 from app.services.llm.google_gemini import GoogleGeminiProvider
 
 __all__ = [
+    "GoogleGeminiProvider",
     "LLMGenerationResult",
     "LLMProvider",
     "LLMProviderError",
     "LLMProviderNotConfiguredError",
     "LLMProviderUnavailableError",
     "LLMRequestError",
-    "GoogleGeminiProvider",
     "create_llm_provider",
 ]
 
 
 def create_llm_provider(settings: Settings) -> LLMProvider:
     api_key = (
-        settings.gemini_api_key.get_secret_value()
-        if settings.gemini_api_key
-        else None
+        settings.gemini_api_key.get_secret_value() if settings.gemini_api_key else None
     )
     return GoogleGeminiProvider(api_key=api_key, model=settings.gemini_model)

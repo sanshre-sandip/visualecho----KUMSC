@@ -112,6 +112,7 @@ export class StorageBackedStatusResolver implements ModelStatusResolver {
       state: "installed",
       progress: null,
       error: null,
+      errorCode: null,
       installedVersion: metadata.version,
     };
   }
