@@ -1,18 +1,25 @@
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Spacing, BorderRadius, Elevation } from '@/constants/theme';
 
 interface CardProps {
   children: React.ReactNode;
   style?: ViewStyle;
   variant?: 'elevated' | 'outlined' | 'filled';
+  padding?: keyof typeof Spacing;
 }
 
-export function Card({ children, style, variant = 'elevated' }: CardProps) {
+export function Card({
+  children,
+  style,
+  variant = 'elevated',
+  padding = 'four',
+}: CardProps) {
   const baseStyle = styles.base;
   const variantStyle = styles[variant];
+  const paddingStyle = { padding: Spacing[padding] };
 
   return (
-    <View style={[baseStyle, variantStyle, style]}>
+    <View style={[baseStyle, variantStyle, paddingStyle, style]}>
       {children}
     </View>
   );
@@ -20,23 +27,22 @@ export function Card({ children, style, variant = 'elevated' }: CardProps) {
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 16,
-    padding: Spacing.four,
+    borderRadius: BorderRadius.large,
   },
   elevated: {
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.light.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: Elevation.level2,
+    elevation: Elevation.level1,
   },
   outlined: {
-    backgroundColor: Colors.light.background,
+    backgroundColor: Colors.light.surface,
     borderWidth: 1,
-    borderColor: Colors.light.border,
+    borderColor: Colors.light.outline,
   },
   filled: {
-    backgroundColor: Colors.light.backgroundElement,
+    backgroundColor: Colors.light.surfaceVariant,
   },
 });
