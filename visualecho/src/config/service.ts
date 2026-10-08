@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AppConfiguration, AIMode, StTMode, TTSMode, SetupMode } from "./model";
+import { AppConfiguration } from "./model";
 
 const STORAGE_KEY = "visualecho_config";
 
