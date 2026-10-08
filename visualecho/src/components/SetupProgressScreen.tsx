@@ -47,6 +47,10 @@ function statusLabel(status: ModelStatus | undefined): string {
   }
 }
 
+function isDownloadInProgress(status: ModelStatus | undefined): boolean {
+  return status?.state === "downloading";
+}
+
 export default function SetupProgressScreen({
   aiMode,
   phase,
@@ -64,6 +68,9 @@ export default function SetupProgressScreen({
     phase === "checking_models" ||
     phase === "installing_models" ||
     phase === "verifying_installation";
+  const showCloudDetails = aiMode === "cloud";
+  const showContinue = phase === "complete";
+  const showBack = !showContinue;
   const actionLabel =
     phase === "complete"
       ? "Continue to Home"
@@ -87,19 +94,21 @@ export default function SetupProgressScreen({
         {phaseLabels[phase]}
       </Text>
 
-      {aiMode === "cloud" && (
+      {showCloudDetails ? (
         <View style={styles.cloudRow}>
           <Text style={styles.cloudTitle}>Cloud LLM</Text>
           <Text style={styles.cloudStatus}>Selected; no local Gemma download</Text>
         </View>
-      )}
+      ) : null}
 
       <View style={styles.modelList}>
         {models.map((model) => {
           const status = statuses.find((item) => item.modelId === model.id);
+          const isDownloading = isDownloadInProgress(status);
+          const progressValue = status?.progress;
           const progress =
-            status?.state === "downloading" && status.progress !== null
-              ? Math.round(status.progress * 100)
+            isDownloading && progressValue !== null && progressValue !== undefined
+              ? Math.round(progressValue * 100)
               : null;
 
           return (
@@ -130,9 +139,9 @@ export default function SetupProgressScreen({
       </View>
 
       {message && <Text accessibilityLiveRegion="polite" style={styles.message}>{message}</Text>}
-      {phase === "complete" && (
+      {showContinue ? (
         <Text style={styles.completeNote}>Required local models are verified.</Text>
-      )}
+      ) : null}
 
       <Pressable
         accessibilityRole="button"
@@ -146,11 +155,11 @@ export default function SetupProgressScreen({
       >
         <Text style={styles.primaryButtonText}>{actionLabel}</Text>
       </Pressable>
-      {phase !== "complete" && (
+      {showBack ? (
         <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>Back to setup choices</Text>
         </Pressable>
-      )}
+      ) : null}
     </View>
   );
 }

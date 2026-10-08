@@ -265,8 +265,14 @@ export class ModelManager {
         }
         this.publishStatus(verifiedStatus, observer);
       } catch (error) {
-        const installError =
-          error instanceof ModelInstallError
+        const wasInterrupted =
+          signal?.aborted || (error instanceof Error && error.name === "AbortError");
+        const installError = wasInterrupted
+          ? new ModelInstallError(
+              "interrupted",
+              "Model setup was interrupted before installation completed. Retry to continue.",
+            )
+          : error instanceof ModelInstallError
             ? error
             : new ModelInstallError(
                 "unknown",
