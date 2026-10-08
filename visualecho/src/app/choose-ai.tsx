@@ -1,67 +1,27 @@
-import { View, Text, StyleSheet, TouchableOpacity, useState } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { AppConfiguration, AIMode } from "@/config/model";
-import { saveConfiguration } from "@/config/service";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 
-export default function ChooseAIScreen() {
-  const navigation = useNavigation();
-  const [selectedOption, setSelectedOption] = useState<AIMode>("local");
-  const [config, setConfig] = useState<AppConfiguration>({
-    setupCompleted: false,
-    aiMode: "local",
-    sttMode: "local",
-    ttsMode: "local",
-  });
-
-  const onOptionPress = (mode: AIMode) => {
-    setSelectedOption(mode);
-    const newConfig: AppConfiguration = {
-      setupCompleted: config.setupCompleted,
-      aiMode: mode,
-      sttMode: config.sttMode,
-      ttsMode: config.ttsMode,
-    };
-    saveConfiguration(newConfig).then(() => {
-      setConfig(newConfig);
-      navigation.navigate("LocalComponents");
-    });
+export default function ChooseAIScreen({ onSelect }: { onSelect: (mode: string) => void }) {
+  const handlePress = (mode: string) => {
+    onSelect(mode);
   };
-
-  const getLocalCardStyle = () => [
-    styles.card,
-    { backgroundColor: "#E8F0FE" },
-    { borderColor: "#1B5E8C" },
-    { borderWidth: 1 },
-  ];
-
-  const getCloudCardStyle = () => [
-    styles.card,
-    { backgroundColor: "#FFF" },
-    { borderColor: "#CCC" },
-    { borderWidth: 1 },
-  ];
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Choose your AI mode</Text>
 
-      <View style={styles.cardContainer}>
-        <TouchableOpacity style={getLocalCardStyle()} onPress={() => onOptionPress("local")}>
-          <Text style={styles.cardText}>Private & Offline</Text>
-          <Text style={styles.cardSubtext}>Run Gemma locally on your device.</Text>
-          <Text style={styles.cardSubtext}>Works without an internet connection.</Text>
-          <Text style={styles.cardSubtext}>No account required.</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.card} onPress={() => handlePress("local")}>
+        <Text style={styles.cardText}>Private & Offline</Text>
+        <Text style={styles.cardSubtext}>Run Gemma locally on your device.</Text>
+        <Text style={styles.cardSubtext}>Works without an internet connection.</Text>
+        <Text style={styles.cardSubtext}>No account required.</Text>
+      </TouchableOpacity>
 
-      <View style={styles.cardContainer}>
-        <TouchableOpacity style={getCloudCardStyle()} onPress={() => onOptionPress("cloud")}>
-          <Text style={styles.cardText}>Cloud AI</Text>
-          <Text style={styles.cardSubtext}>Use a cloud-based language model for AI reasoning.</Text>
-          <Text style={styles.cardSubtext}>Requires an internet connection.</Text>
-          <Text style={styles.cardSubtext}>Account setup will be required later.</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.card} onPress={() => handlePress("cloud")}>
+        <Text style={styles.cardText}>Cloud AI</Text>
+        <Text style={styles.cardSubtext}>Use a cloud-based language model for AI reasoning.</Text>
+        <Text style={styles.cardSubtext}>Requires an internet connection.</Text>
+        <Text style={styles.cardSubtext}>Account setup will be required later.</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -79,16 +39,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
   },
-  cardContainer: {
-    width: "100%",
-    marginBottom: 16,
-  },
   card: {
-    minHeight: 120,
+    minHeight: 140,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    backgroundColor: "#F5F5F5",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#CCC",
   },
   cardText: {
     fontSize: 20,

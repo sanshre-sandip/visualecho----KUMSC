@@ -3,6 +3,8 @@ import { AppConfiguration, AIMode, StTMode, TTSMode, SetupMode } from "./model";
 
 const STORAGE_KEY = "visualecho_config";
 
+export type { AppConfiguration } from "./model";
+
 export async function loadConfiguration(): Promise<AppConfiguration> {
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);

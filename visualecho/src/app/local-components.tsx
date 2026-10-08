@@ -1,13 +1,9 @@
-import { View, Text, StyleSheet } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { View, Text, StyleSheet, Button } from "react-native";
 
-export default function LocalComponentsScreen() {
-  const navigation = useNavigation();
-
+export default function LocalComponentsScreen({ onContinue }: { onContinue: () => void }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Local audio processing</Text>
-
       <Text style={styles.subtext}>
         Speech recognition and voice generation stay on your device.
       </Text>

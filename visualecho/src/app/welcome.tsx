@@ -1,18 +1,13 @@
 import { View, Text, StyleSheet, Button } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Link } from "expo-router";
 
-export default function WelcomeScreen() {
-  const navigation = useNavigation();
-
+export default function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to VisualEcho</Text>
       <Text style={styles.description}>
         An accessible daily learning companion designed with privacy in mind.
       </Text>
-
-      <Button title="Get Started" onPress={() => navigation.navigate("ChooseAIMode")} />
+      <Button title="Get Started" onPress={onContinue} />
     </View>
   );
 }

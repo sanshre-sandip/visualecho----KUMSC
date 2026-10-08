@@ -8,7 +8,7 @@ export type SetupMode = "private-offline" | "cloud";
 
 export interface AppConfiguration {
   setupCompleted: boolean;
-  aiMode: AIMode;
+  aiMode: string;
   sttMode: StTMode;
   ttsMode: TTSMode;
 }

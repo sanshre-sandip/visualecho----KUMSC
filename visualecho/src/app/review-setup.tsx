@@ -1,11 +1,14 @@
 import { View, Text, StyleSheet, Button } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { loadConfiguration, saveConfiguration, AppConfiguration } from "@/config/service";
 
-export default function ReviewSetupScreen() {
-  const navigation = useNavigation();
-  const config = loadConfiguration();
-
+export default function ReviewSetupScreen({
+  aiMode,
+  onBack,
+  onComplete,
+}: {
+  aiMode: string;
+  onBack: () => void;
+  onComplete: () => void;
+}) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Review your setup</Text>
@@ -13,7 +16,7 @@ export default function ReviewSetupScreen() {
       <View style={styles.summaryBox}>
         <Text style={styles.summaryRowLabel}>AI</Text>
         <Text style={styles.summaryRowValue}>
-          {config.aiMode === "local" ? "Private & Offline" : "Cloud AI"}
+          {aiMode === "local" ? "Private & Offline" : "Cloud AI"}
         </Text>
       </View>
 
@@ -27,7 +30,14 @@ export default function ReviewSetupScreen() {
         <Text style={styles.summaryRowValue}>TTS — Local</Text>
       </View>
 
-      <Text style={styles.privacyMessage}>"Your speech processing stays on this device."</Text>
+      <Text style={styles.privacyMode}>
+{'Your speech processing stays on this device.'}
+</Text>
+
+      <View style={styles.buttons}>
+        <Button title="Back" onPress={onBack} />
+        <Button title="Set Up VisualEcho" onPress={onComplete} />
+      </View>
     </View>
   );
 }
@@ -67,11 +77,17 @@ const styles = StyleSheet.create({
     color: "#1B5E8C",
     fontWeight: "500",
   },
-  privacyMessage: {
+  privacyMode: {
     fontSize: 12,
     color: "#666",
     textAlign: "center",
     marginTop: 20,
     fontStyle: "italic",
+  },
+  buttons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 24,
   },
 });
