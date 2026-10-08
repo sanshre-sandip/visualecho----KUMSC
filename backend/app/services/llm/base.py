@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import ClassVar
 
 from pydantic import BaseModel
@@ -32,12 +33,41 @@ class LLMProviderUnavailableError(LLMProviderError):
         super().__init__("LLM provider is unavailable")
 
 
+class LLMRateLimitedError(LLMProviderError):
+    code = "LLM_RATE_LIMITED"
+    status_code = 429
+
+    def __init__(self) -> None:
+        super().__init__("LLM provider rate limit exceeded")
+
+
+class LLMTimeoutError(LLMProviderError):
+    code = "LLM_TIMEOUT"
+    status_code = 504
+
+    def __init__(self) -> None:
+        super().__init__("LLM provider request timed out")
+
+
+class LLMResponseInvalidError(LLMProviderError):
+    code = "LLM_RESPONSE_INVALID"
+    status_code = 502
+
+    def __init__(self) -> None:
+        super().__init__("LLM provider returned an unreadable response")
+
+
 class LLMRequestError(LLMProviderError):
     code = "LLM_REQUEST_INVALID"
     status_code = 400
 
     def __init__(self) -> None:
         super().__init__("LLM request is invalid")
+
+
+class LLMImage(BaseModel):
+    data: bytes
+    mime_type: str
 
 
 class LLMGenerationResult(BaseModel):
@@ -64,5 +94,6 @@ class LLMProvider(ABC):
         system_instruction: str | None = None,
         temperature: float | None = None,
         max_output_tokens: int | None = None,
+        images: Sequence[LLMImage] | None = None,
     ) -> LLMGenerationResult:
         raise NotImplementedError

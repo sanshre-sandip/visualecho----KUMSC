@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, SafeAreaView, StatusBar } from "react-native";
-import { DarkTheme, ThemeProvider } from "expo-router";
+import { StyleSheet, SafeAreaView, StatusBar } from "react-native";
+import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import WelcomeScreen from "./welcome";
 import ChooseAIScreen from "./choose-ai";
@@ -298,22 +298,13 @@ export default function RootLayout() {
   // If setup is completed, show the main app (expo-router managed routes)
   return (
     <ThemeProvider value={DarkTheme}>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" />
-        <View style={styles.mainContainer}>
-          {/* expo-router will render the matching route below (index, practice, etc.) */}
-        </View>
-      </SafeAreaView>
+      <Stack screenOptions={{ headerShown: false }} />
     </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  mainContainer: {
     flex: 1,
     backgroundColor: "#fff",
   },
