@@ -113,6 +113,12 @@ export default function RootLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    if (initialized) {
+      SplashScreen.hide();
+    }
+  }, [initialized]);
+
   const beginSetup = async () => {
     const controller = new AbortController();
     setupController.current?.abort();
