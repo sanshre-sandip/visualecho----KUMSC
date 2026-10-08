@@ -79,7 +79,7 @@ cp .env.example .env
 | ---------------- | -------- | --------------------------------------------------- |
 | `GEMINI_API_KEY` | no       | Cloud LLM key; server-side only                     |
 | `GEMINI_MODEL`   | no       | Model id, defaults to `gemini-3.8-flash`            |
-| `CORS_ORIGINS`   | no       | Comma-separated allowed origins; empty disables CORS |
+| `CORS_ORIGINS`   | no       | Comma-separated allowed origins; development defaults include the Vite web app at `http://localhost:5173`; set the exact deployed web origin in production |
 | `ENVIRONMENT`    | no       | `development` or `production`                       |
 
 The backend starts and serves `/health` **without** `GEMINI_API_KEY`.
@@ -102,11 +102,16 @@ Open <http://127.0.0.1:8000/health> and <http://127.0.0.1:8000/docs>.
 
 ## Endpoints
 
-| Method | Path      | Auth | Description        |
-| ------ | --------- | ---- | ------------------ |
-| GET    | `/health` | none | Service liveness   |
+| Method | Path                             | Auth | Description                                    |
+| ------ | -------------------------------- | ---- | ---------------------------------------------- |
+| GET    | `/health`                        | none | Service liveness                               |
+| POST   | `/api/v1/llm/generate-words`     | none | Generate practice words                       |
+| POST   | `/api/v1/llm/evaluate-speech`    | none | Evaluate a browser/on-device STT transcript    |
+| POST   | `/api/v1/llm/analyze-drawing`    | none | Analyze a drawing sent as base64 image content |
 
-Reserved for later (not implemented yet): `/api/v1/llm/...`
+The LLM routes require a configured server-side `GEMINI_API_KEY`. Production
+browser clients also require their exact web origin in `CORS_ORIGINS`; CORS
+changes take effect only after the backend is redeployed.
 
 ## LLM abstraction
 
