@@ -39,7 +39,15 @@
 .practice-word { min-height: 111px; display: grid; place-items: center; color: #1b5e8c; font-size: clamp(34px, 6vw, 48px); font-weight: 700; letter-spacing: -1px; }
 .tts-badge { padding: 5px 9px; border-radius: 20px; color: #4a6650; background: #f0f6ef; font-size: 10px; font-weight: 600; }
 .word-picture-row { min-height: 190px; display: grid; grid-template-columns: minmax(130px, .8fr) minmax(170px, 1fr); align-items: center; gap: 14px; margin: 10px 0 16px; }
-.word-picture { display: block; width: 100%; max-width: 220px; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid #e8eaed; border-radius: 14px; }
+.word-photo { min-width: 0; margin: 0; }
+.word-picture { display: block; width: 100%; max-width: 260px; aspect-ratio: 4 / 3; object-fit: cover; border: 1px solid #e8eaed; border-radius: 14px; background: #f1f3f5; }
+.word-photo figcaption { display: grid; gap: 4px; max-width: 260px; padding: 7px 2px 0; color: #4a5560; font-size: 9px; line-height: 1.4; overflow-wrap: anywhere; }
+.word-photo figcaption a { color: #1b5e8c; }
+.word-photo-state { min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px; border: 1px dashed #c9d2d9; border-radius: 14px; color: #4a5560; background: #f6f8f9; text-align: center; font-size: 11px; line-height: 1.5; }
+.word-photo-state small { color: #687681; font-size: 10px; }
+.word-photo-error { border-color: #d6dce1; }
+.photo-spinner { width: 23px; height: 23px; border: 3px solid #d6e4f0; border-top-color: #1b5e8c; border-radius: 50%; animation: photo-spin .8s linear infinite; }
+@keyframes photo-spin { to { transform: rotate(360deg); } }
 .word-reading { min-width: 0; }
 .word-reading .practice-word { min-height: 85px; display: flex; justify-content: flex-start; overflow-wrap: anywhere; }
 .tts-controls { display: flex; align-items: center; gap: 8px; }
@@ -103,7 +111,10 @@
   .history-row { grid-template-columns: 22px 1fr auto; }
   .history-row > span:last-child { display: none; }
   .word-picture-row { grid-template-columns: 1fr; justify-items: center; }
-  .word-picture { width: min(100%, 240px); }
+  .word-photo { width: 100%; display: grid; justify-items: center; }
+  .word-picture { width: min(100%, 280px); }
+  .word-photo figcaption { width: min(100%, 280px); }
+  .word-photo-state { width: min(100%, 280px); }
   .word-reading { width: 100%; }
   .word-reading .practice-word { justify-content: center; }
   .tts-controls { justify-content: center; }

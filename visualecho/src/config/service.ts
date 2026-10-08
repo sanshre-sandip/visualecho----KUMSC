@@ -13,6 +13,7 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
       return {
         setupCompleted: parsed.setupCompleted ?? false,
         setupStarted: parsed.setupStarted ?? false,
+        demoMode: parsed.demoMode ?? false,
         aiMode: parsed.aiMode ?? "local",
         sttMode: parsed.sttMode ?? "local",
         ttsMode: parsed.ttsMode ?? "local",
@@ -21,6 +22,7 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
     return {
       setupCompleted: false,
       setupStarted: false,
+      demoMode: false,
       aiMode: "local",
       sttMode: "local",
       ttsMode: "local",
@@ -30,6 +32,7 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
     return {
       setupCompleted: false,
       setupStarted: false,
+      demoMode: false,
       aiMode: "local",
       sttMode: "local",
       ttsMode: "local",

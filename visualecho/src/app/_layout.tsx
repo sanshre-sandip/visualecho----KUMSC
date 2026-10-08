@@ -44,7 +44,9 @@ export default function RootLayout() {
       const restoredMode = normalizeAIMode(config.aiMode);
       setAiMode(restoredMode);
 
-      if (config.setupCompleted) {
+      if (config.demoMode) {
+        setAppReady(true);
+      } else if (config.setupCompleted) {
         const missing = await modelManager.getMissingModels(config);
         if (!mounted) {
           return;
@@ -126,6 +128,7 @@ export default function RootLayout() {
     const config: AppConfiguration = {
       setupCompleted: false,
       setupStarted: true,
+      demoMode: false,
       aiMode,
       sttMode: "local",
       ttsMode: "local",
@@ -203,6 +206,22 @@ export default function RootLayout() {
     }
   };
 
+  const beginDemoMode = async () => {
+    const saved = await saveConfiguration({
+      setupCompleted: false,
+      setupStarted: false,
+      demoMode: true,
+      aiMode,
+      sttMode: "local",
+      ttsMode: "local",
+    });
+    if (saved) {
+      setAppReady(true);
+    } else {
+      setSetupMessage("Demo mode could not be saved on this device. Check app storage and retry.");
+    }
+  };
+
   if (!initialized) {
     return null;
   }
@@ -231,6 +250,7 @@ export default function RootLayout() {
                   const newConfig: AppConfiguration = {
                     setupCompleted: false,
                     setupStarted: false,
+                    demoMode: false,
                     aiMode: selectedMode,
                     sttMode: "local",
                     ttsMode: "local",
@@ -264,6 +284,7 @@ export default function RootLayout() {
                 aiMode={aiMode}
                 onBack={() => setSetupStep("local-components")}
                 onComplete={() => void beginSetup()}
+                onTryDemo={() => void beginDemoMode()}
               />
             </SafeAreaView>
           </ThemeProvider>

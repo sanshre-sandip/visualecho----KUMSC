@@ -7,6 +7,7 @@ import { checkHealth, type HealthResponse } from "@/services/api/health";
 import { API_BASE_URL } from "@/services/api/config";
 import { VisualEchoApiError } from "@/services/api/client";
 import { getAIProvider } from "@/services/ai";
+import { searchCommonsPhoto, type CommonsPhoto } from "@/services/commonsPhotos";
 import type {
   Difficulty,
   SpeechEvaluationResult,
@@ -18,7 +19,6 @@ import {
   saveProgress,
   type ProgressData,
 } from "@/services/progress";
-import { getWordIllustration } from "@/services/wordIllustration";
 
 type AIMode = "local" | "cloud";
 type CloudAction = "words" | "speech" | "drawing";
@@ -231,6 +231,8 @@ export default function App() {
     const speechWindow = window as SpeechWindow;
     return speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition ?? null;
   }, []);
+  const speechSynthesisAvailable =
+    "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
   const currentWord = wordSet.words[wordIndex] ?? wordSet.words[0] ?? "";
   const successfulAttempts = progress.attempts.filter((attempt) => attempt.correct).length;
   const accuracy = progress.attempts.length
@@ -389,6 +391,16 @@ export default function App() {
         transcript: transcript.trim(),
       });
       setSpeechResult(result);
+      const responseText = `${result.correct ? "Nice work!" : "Keep practicing!"} ${result.feedback}`;
+      if (result.correct) {
+        speakText(responseText);
+      } else {
+        const spelledWord = [...result.target_word.trim()].join(" ... ");
+        speakText(
+          `${responseText} Let's learn it one letter at a time: ${spelledWord}. Now listen to the whole word slowly: ${result.target_word}. Try saying it again. This word will stay here until it matches.`,
+          Math.min(speechRate, 0.7),
+        );
+      }
       persistProgress({
         ...progress,
         attempts: [
@@ -400,7 +412,10 @@ export default function App() {
           },
         ],
       });
-      setWordIndex((index) => Math.min(index + 1, wordSet.words.length - 1));
+      if (result.correct) {
+        setWordIndex((index) => Math.min(index + 1, wordSet.words.length - 1));
+      }
+      setTranscript("");
       setRetryAction(null);
     } catch (error) {
       if (mode === "cloud") recordCloudError(error, "speech");
@@ -472,14 +487,14 @@ export default function App() {
     }
   }
 
-  function speakWord(word: string) {
-    if (!("speechSynthesis" in window)) {
+  function speakText(text: string, rate = speechRate) {
+    if (!speechSynthesisAvailable) {
       setCloudError("Text-to-speech is not available in this browser.");
       return;
     }
     const synthesis = window.speechSynthesis;
     synthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(word);
+    const utterance = new SpeechSynthesisUtterance(text);
     const voice = availableVoices.find((candidate) => candidate.voiceURI === selectedVoiceURI);
     if (voice) {
       utterance.voice = voice;
@@ -487,7 +502,7 @@ export default function App() {
     } else {
       utterance.lang = "en-US";
     }
-    utterance.rate = speechRate;
+    utterance.rate = rate;
     utterance.pitch = 1.05;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
@@ -590,7 +605,7 @@ export default function App() {
                 speechResult={speechResult}
                 generateWords={() => void generateWords()}
                 evaluateAttempt={() => void evaluateAttempt()}
-                speakWord={speakWord}
+                speakText={speakText}
                 stopSpeaking={stopSpeaking}
                 availableVoices={availableVoices}
                 selectedVoiceURI={selectedVoiceURI}
@@ -598,6 +613,7 @@ export default function App() {
                 speechRate={speechRate}
                 setSpeechRate={setSpeechRate}
                 isSpeaking={isSpeaking}
+                speechSynthesisAvailable={speechSynthesisAvailable}
                 startSpeechRecognition={startSpeechRecognition}
                 speechRecognitionAvailable={Boolean(speechRecognition)}
                 isListening={isListening}
@@ -631,7 +647,7 @@ export default function App() {
                 mode={mode}
                 changeMode={changeMode}
                 speechRecognitionAvailable={Boolean(speechRecognition)}
-                speechSynthesisAvailable={"speechSynthesis" in window}
+                speechSynthesisAvailable={speechSynthesisAvailable}
                 health={health}
                 healthError={healthError}
                 apiBaseUrl={API_BASE_URL}
@@ -726,7 +742,7 @@ function PracticePage(props: {
   speechResult: SpeechEvaluationResult | null;
   generateWords: () => void;
   evaluateAttempt: () => void;
-  speakWord: (word: string) => void;
+  speakText: (text: string, rate?: number) => void;
   stopSpeaking: () => void;
   availableVoices: SpeechSynthesisVoice[];
   selectedVoiceURI: string;
@@ -734,6 +750,7 @@ function PracticePage(props: {
   speechRate: number;
   setSpeechRate: (rate: number) => void;
   isSpeaking: boolean;
+  speechSynthesisAvailable: boolean;
   startSpeechRecognition: () => void;
   speechRecognitionAvailable: boolean;
   isListening: boolean;
@@ -743,8 +760,9 @@ function PracticePage(props: {
   const {
     mode, topic, setTopic, difficulty, setDifficulty, wordSet, wordIndex,
     setWordIndex, currentWord, transcript, setTranscript, speechResult,
-    generateWords, evaluateAttempt, speakWord, stopSpeaking, availableVoices,
+    generateWords, evaluateAttempt, speakText, stopSpeaking, availableVoices,
     selectedVoiceURI, setSelectedVoiceURI, speechRate, setSpeechRate, isSpeaking,
+    speechSynthesisAvailable,
     startSpeechRecognition,
     speechRecognitionAvailable, isListening, isGenerating, isEvaluating,
   } = props;
@@ -770,25 +788,22 @@ function PracticePage(props: {
         <section className="surface-card current-word-card">
           <div style={styles.row}>
             <span style={styles.eyebrow}>Word {Math.min(wordIndex + 1, wordSet.words.length)} of {wordSet.words.length}</span>
-            <span className="tts-badge">Browser voice</span>
+            <span className="tts-badge">{speechSynthesisAvailable ? "Browser voice" : "Voice unavailable"}</span>
           </div>
           <div className="word-picture-row">
-            <img
-              className="word-picture"
-              src={getWordIllustration(currentWord, wordSet.topic)}
-              alt={`Picture clue for ${currentWord}`}
-            />
+            <WordPhoto word={currentWord} />
             <div className="word-reading">
               <div className="practice-word">{currentWord || "Ready?"}</div>
               <div className="tts-controls">
                 <Button
                   title={isSpeaking ? "Playing word…" : "Hear the word"}
-                  onClick={() => speakWord(currentWord)}
-                  disabled={!currentWord || isSpeaking}
+                  onClick={() => speakText(currentWord)}
+                  disabled={!currentWord || isSpeaking || !speechSynthesisAvailable}
                   style={{ minHeight: 44 }}
                 />
                 {isSpeaking && <button className="quiet-button" onClick={stopSpeaking}>Stop</button>}
               </div>
+              {!speechSynthesisAvailable && <p className="helper-text">Text-to-speech is not available in this browser.</p>}
             </div>
           </div>
           <div className="voice-settings">
@@ -836,14 +851,104 @@ function PracticePage(props: {
           {speechResult && <div className={`feedback-box ${speechResult.correct ? "feedback-positive" : ""}`} role="status">
             <strong>{speechResult.correct ? "Nice work!" : "Keep practicing!"}</strong>
             <p>{speechResult.feedback}</p>
+            <div className="learning-prompt">
+              {!speechResult.correct && (
+                <>
+                  <p>This word stays here until it matches. Listen, then try saying it again.</p>
+                  <div className="learning-actions">
+                    <button className="quiet-button" onClick={() => speakText(`The letters are: ${[...speechResult.target_word.trim()].join(" ... ")}.`, Math.min(speechRate, 0.7))} disabled={!speechSynthesisAvailable}>
+                      Hear letters slowly
+                    </button>
+                    <button className="quiet-button" onClick={() => speakText(speechResult.target_word, 0.65)} disabled={!speechSynthesisAvailable}>
+                      Hear whole word slowly
+                    </button>
+                  </div>
+                </>
+              )}
+              <button
+                className="quiet-button"
+                onClick={() => speakText(`${speechResult.correct ? "Nice work!" : "Keep practicing!"} ${speechResult.feedback}`)}
+                disabled={!speechSynthesisAvailable}
+              >
+                Hear this feedback
+              </button>
+            </div>
             {mode === "local" && <small>Demo evaluation · {speechResult.provider} · not a clinical measure.</small>}
           </div>}
         </section>
       </div>
       <div className="word-chips" aria-label="Words in this practice set">
-        {wordSet.words.map((word, index) => <button key={`${word}-${index}`} className={`word-chip ${index === wordIndex ? "word-chip-active" : ""}`} onClick={() => setWordIndex(index)}>{index + 1}. {word}</button>)}
+        {wordSet.words.map((word, index) => <button key={`${word}-${index}`} className={`word-chip ${index === wordIndex ? "word-chip-active" : ""}`} onClick={() => { setWordIndex(index); setTranscript(""); setSpeechResult(null); }}>{index + 1}. {word}</button>)}
       </div>
     </section>
+  );
+}
+
+function WordPhoto({ word }: { word: string }) {
+  const [photo, setPhoto] = useState<CommonsPhoto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [retryNumber, setRetryNumber] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setPhoto(null);
+    setError("");
+    setIsLoading(true);
+
+    void searchCommonsPhoto(word, controller.signal)
+      .then((result) => setPhoto(result))
+      .catch((reason: unknown) => {
+        if (reason instanceof DOMException && reason.name === "AbortError") return;
+        setError(errorMessage(reason));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [word, retryNumber]);
+
+  if (isLoading) {
+    return (
+      <div className="word-photo-state" role="status" aria-live="polite">
+        <span className="photo-spinner" aria-hidden="true" />
+        <span>Finding a real photo of {word}…</span>
+        <small>Searching Wikimedia Commons</small>
+      </div>
+    );
+  }
+
+  if (error || !photo) {
+    return (
+      <div className="word-photo-state word-photo-error" role="status">
+        <span>{error ? `Photo unavailable: ${error}` : `No suitable photo found for “${word}”.`}</span>
+        <small>Photos are fetched from Wikimedia Commons; no placeholder image is substituted.</small>
+        <button className="quiet-button" onClick={() => setRetryNumber((value) => value + 1)}>
+          Try photo search again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <figure className="word-photo">
+      <img
+        className="word-picture"
+        src={photo.imageUrl}
+        alt={photo.description}
+        onError={() => {
+          setPhoto(null);
+          setError("The Wikimedia Commons image could not be loaded.");
+        }}
+      />
+      <figcaption>
+        <a href={photo.sourceUrl} target="_blank" rel="noreferrer">
+          Source: {photo.fileTitle}
+        </a>
+        <span>Photo: {photo.artist} · {photo.license}</span>
+      </figcaption>
+    </figure>
   );
 }
 
@@ -964,6 +1069,10 @@ function SettingsPage(props: {
         <hr />
         <Capability name="Speech recognition" available={speechRecognitionAvailable} detail={speechRecognitionAvailable ? "Browser speech recognition is available; audio is processed by your browser." : "Unavailable here; type a transcript instead."} />
         <Capability name="Read words aloud" available={speechSynthesisAvailable} detail={speechSynthesisAvailable ? "Uses browser speech synthesis." : "Unavailable in this browser."} />
+        <div className="settings-row">
+          <div><strong>Word photos</strong><small>Searches Wikimedia Commons using the displayed practice word. Photo credits and licenses are shown with each image.</small></div>
+          <a className="quiet-button" href="https://commons.wikimedia.org/" target="_blank" rel="noreferrer">About Commons</a>
+        </div>
         <hr />
         <div className="settings-row">
           <div><strong>Backend health</strong><small>{health ? `${health.service} is responding.` : healthError || "Checking…"}</small></div>

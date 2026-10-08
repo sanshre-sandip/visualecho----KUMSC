@@ -4,10 +4,12 @@ export default function ReviewSetupScreen({
   aiMode,
   onBack,
   onComplete,
+  onTryDemo,
 }: {
   aiMode: string;
   onBack: () => void;
   onComplete: () => void;
+  onTryDemo: () => void;
 }) {
   return (
     <View style={styles.container}>
@@ -31,12 +33,13 @@ export default function ReviewSetupScreen({
       </View>
 
       <Text style={styles.privacyMode}>
-{'Your speech processing stays on this device.'}
+        Real setup only completes after the required models and runtimes are verified.
 </Text>
 
       <View style={styles.buttons}>
         <Button title="Back" onPress={onBack} />
         <Button title="Set Up VisualEcho" onPress={onComplete} />
+        <Button title="Try the interactive demo" onPress={onTryDemo} />
       </View>
     </View>
   );
