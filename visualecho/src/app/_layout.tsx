@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, SafeAreaView, StatusBar } from "react-native";
 import { DarkTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -6,27 +6,170 @@ import WelcomeScreen from "./welcome";
 import ChooseAIScreen from "./choose-ai";
 import LocalComponentsScreen from "./local-components";
 import ReviewSetupScreen from "./review-setup";
-import { loadConfiguration, saveConfiguration, AppConfiguration } from "@/config/service";
+import SetupProgressScreen from "@/components/SetupProgressScreen";
+import type { SetupProgressPhase } from "@/components/SetupProgressScreen";
+import { loadConfiguration, saveConfiguration } from "@/config/service";
+import type { AppConfiguration } from "@/config/model";
+import { createStorageBackedModelManager } from "@/models/ModelStorage";
+import type { ModelDefinition } from "@/models/ModelDefinition";
+import type { ModelStatus } from "@/models/ModelStatus";
 
 SplashScreen.preventAutoHideAsync();
 
+const modelManager = createStorageBackedModelManager();
+
+function normalizeAIMode(mode: string): "local" | "cloud" {
+  return mode === "cloud" ? "cloud" : "local";
+}
+
 export default function RootLayout() {
-  const [setupCompleted, setSetupCompleted] = useState<boolean>(false);
+  const [appReady, setAppReady] = useState<boolean>(false);
+  const [initialized, setInitialized] = useState<boolean>(false);
   const [setupStep, setSetupStep] = useState<string>("welcome");
-  const [aiMode, setAiMode] = useState<string>("local");
+  const [aiMode, setAiMode] = useState<"local" | "cloud">("local");
+  const [setupPhase, setSetupPhase] = useState<SetupProgressPhase>("idle");
+  const [requiredModels, setRequiredModels] = useState<ModelDefinition[]>([]);
+  const [modelStatuses, setModelStatuses] = useState<ModelStatus[]>([]);
+  const [setupMessage, setSetupMessage] = useState<string | null>(null);
+  const setupController = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    loadConfiguration().then((config: AppConfiguration) => {
+    let mounted = true;
+
+    const restoreSetup = async () => {
+      const config = await loadConfiguration();
+      if (!mounted) {
+        return;
+      }
+      const restoredMode = normalizeAIMode(config.aiMode);
+      setAiMode(restoredMode);
+
       if (config.setupCompleted) {
-        setSetupCompleted(true);
+        const missing = await modelManager.getMissingModels(config);
+        if (!mounted) {
+          return;
+        }
+        if (missing.length === 0) {
+          setAppReady(true);
+        } else {
+          const models = await modelManager.getRequiredModels(config);
+          const statuses = await Promise.all(
+            models.map(async (model) =>
+              (await modelManager.getModelStatus(model.id)) ?? {
+                modelId: model.id,
+                state: "not_installed" as const,
+                progress: null,
+                error: null,
+                errorCode: null,
+                installedVersion: null,
+              },
+            ),
+          );
+          if (!mounted) {
+            return;
+          }
+          setRequiredModels(models);
+          setModelStatuses(statuses);
+          setSetupMessage("Required models are missing or invalid. Set them up again to continue.");
+          setSetupStep("setup-progress");
+          await saveConfiguration({ ...config, setupCompleted: false });
+        }
       } else {
         setSetupStep("welcome");
       }
-    });
+
+      if (mounted) {
+        setInitialized(true);
+      }
+    };
+
+    void restoreSetup();
+    return () => {
+      mounted = false;
+      setupController.current?.abort();
+    };
   }, []);
 
-  // If setup is not completed, manage the setup flow steps
-  if (!setupCompleted) {
+  const beginSetup = async () => {
+    const controller = new AbortController();
+    setupController.current?.abort();
+    setupController.current = controller;
+    const config: AppConfiguration = {
+      setupCompleted: false,
+      aiMode,
+      sttMode: "local",
+      ttsMode: "local",
+    };
+
+    setSetupStep("setup-progress");
+    setSetupPhase("preparing");
+    setSetupMessage(null);
+    setModelStatuses([]);
+
+    try {
+      await saveConfiguration(config);
+      const models = await modelManager.getRequiredModels(config);
+      setRequiredModels(models);
+      const initialStatuses = await Promise.all(
+        models.map(async (model) =>
+          (await modelManager.getModelStatus(model.id)) ?? {
+            modelId: model.id,
+            state: "not_installed" as const,
+            progress: null,
+            error: null,
+            errorCode: null,
+            installedVersion: null,
+          },
+        ),
+      );
+      setModelStatuses(initialStatuses);
+
+      const statuses = await modelManager.installRequiredModels(
+        config,
+        {
+          onPhase: setSetupPhase,
+          onStatus: (status) => {
+            setModelStatuses((current) => {
+              const index = current.findIndex((item) => item.modelId === status.modelId);
+              if (index < 0) {
+                return [...current, status];
+              }
+              return current.map((item) =>
+                item.modelId === status.modelId ? status : item,
+              );
+            });
+          },
+        },
+        controller.signal,
+      );
+      setModelStatuses(statuses);
+
+      const missing = await modelManager.getMissingModels(config);
+      if (missing.length === 0) {
+        await saveConfiguration({ ...config, setupCompleted: true });
+        setSetupPhase("complete");
+      } else {
+        setSetupPhase("error");
+        setSetupMessage(
+          statuses.find((status) => status.state === "error")?.error ??
+            "Some required local models could not be verified. Retry setup.",
+        );
+      }
+    } catch {
+      setSetupPhase("error");
+      setSetupMessage("VisualEcho could not prepare model setup. Check device access and retry.");
+    } finally {
+      if (setupController.current === controller) {
+        setupController.current = null;
+      }
+    }
+  };
+
+  if (!initialized) {
+    return null;
+  }
+
+  if (!appReady) {
     switch (setupStep) {
       case "welcome":
         return (
@@ -46,14 +189,15 @@ export default function RootLayout() {
               <StatusBar barStyle="light-content" />
               <ChooseAIScreen
                 onSelect={(mode: string) => {
+                  const selectedMode = normalizeAIMode(mode);
                   const newConfig: AppConfiguration = {
                     setupCompleted: false,
-                    aiMode: mode,
+                    aiMode: selectedMode,
                     sttMode: "local",
                     ttsMode: "local",
                   };
                   saveConfiguration(newConfig).then(() => {
-                    setAiMode(mode);
+                    setAiMode(selectedMode);
                     setSetupStep("local-components");
                   });
                 }}
@@ -78,17 +222,30 @@ export default function RootLayout() {
             <SafeAreaView style={styles.safeArea}>
               <StatusBar barStyle="light-content" />
               <ReviewSetupScreen
-                aiMode={aiMode ?? "local"}
+                aiMode={aiMode}
                 onBack={() => setSetupStep("local-components")}
-                onComplete={() => {
-                  saveConfiguration({
-                    setupCompleted: true,
-                    aiMode: aiMode ?? "local",
-                    sttMode: "local",
-                    ttsMode: "local",
-                  }).then(() => {
-                    setSetupCompleted(true);
-                  });
+                onComplete={() => void beginSetup()}
+              />
+            </SafeAreaView>
+          </ThemeProvider>
+        );
+      case "setup-progress":
+        return (
+          <ThemeProvider value={DarkTheme}>
+            <SafeAreaView style={styles.safeArea}>
+              <StatusBar barStyle="dark-content" />
+              <SetupProgressScreen
+                aiMode={aiMode}
+                phase={setupPhase}
+                models={requiredModels}
+                statuses={modelStatuses}
+                message={setupMessage}
+                onStart={() => void beginSetup()}
+                onCancel={() => setupController.current?.abort()}
+                onContinue={() => setAppReady(true)}
+                onBack={() => {
+                  setupController.current?.abort();
+                  setSetupStep("review");
                 }}
               />
             </SafeAreaView>
