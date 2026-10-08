@@ -506,8 +506,9 @@ export default function App() {
     utterance.pitch = 1.05;
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
       setIsSpeaking(false);
+      if (event.error === "canceled" || event.error === "interrupted") return;
       setCloudError("Browser text-to-speech could not play this word. Try another voice.");
     };
     setCloudError("");
@@ -603,6 +604,7 @@ export default function App() {
                 transcript={transcript}
                 setTranscript={setTranscript}
                 speechResult={speechResult}
+                setSpeechResult={setSpeechResult}
                 generateWords={() => void generateWords()}
                 evaluateAttempt={() => void evaluateAttempt()}
                 speakText={speakText}
@@ -740,6 +742,7 @@ function PracticePage(props: {
   transcript: string;
   setTranscript: (value: string) => void;
   speechResult: SpeechEvaluationResult | null;
+  setSpeechResult: (result: SpeechEvaluationResult | null) => void;
   generateWords: () => void;
   evaluateAttempt: () => void;
   speakText: (text: string, rate?: number) => void;
@@ -760,20 +763,33 @@ function PracticePage(props: {
   const {
     mode, topic, setTopic, difficulty, setDifficulty, wordSet, wordIndex,
     setWordIndex, currentWord, transcript, setTranscript, speechResult,
+    setSpeechResult,
     generateWords, evaluateAttempt, speakText, stopSpeaking, availableVoices,
     selectedVoiceURI, setSelectedVoiceURI, speechRate, setSpeechRate, isSpeaking,
     speechSynthesisAvailable,
     startSpeechRecognition,
     speechRecognitionAvailable, isListening, isGenerating, isEvaluating,
   } = props;
+  const completedWords = wordSet.words.slice(0, wordIndex).length;
   return (
     <section>
-      <PageHeading eyebrow="Daily practice" title="Find your words" subtitle="Listen, try a word, and take each step at your own pace." />
+      <PageHeading eyebrow="Daily practice" title="Find your words" subtitle="One word at a time. Listen, try, and keep going at your own pace." />
+      <div className="practice-set-progress" aria-label={`${completedWords} of ${wordSet.words.length} words completed`}>
+        <div className="practice-set-progress-copy">
+          <span>Today's word set</span>
+          <strong>{completedWords} of {wordSet.words.length} words matched</strong>
+        </div>
+        <div className="practice-set-progress-track" aria-hidden="true">
+          <span style={{ width: `${wordSet.words.length ? (completedWords / wordSet.words.length) * 100 : 0}%` }} />
+        </div>
+      </div>
       <div className="two-column">
-        <section className="surface-card">
-          <h2>Make it yours</h2>
+        <section className="surface-card setup-card">
+          <span className="card-step">01 <span>SET UP</span></span>
+          <h2>Choose a word theme</h2>
+          <p className="card-intro">Pick a topic and a level that feels right for today.</p>
           <div style={styles.field}>
-            <label style={styles.fieldLabel} htmlFor="topic">What would you like words about?</label>
+            <label style={styles.fieldLabel} htmlFor="topic">Word theme</label>
             <input style={styles.input} id="topic" value={topic} onChange={(event) => setTopic(event.target.value)} maxLength={64} />
           </div>
           <div style={styles.field}>
@@ -787,8 +803,14 @@ function PracticePage(props: {
         </section>
         <section className="surface-card current-word-card">
           <div style={styles.row}>
-            <span style={styles.eyebrow}>Word {Math.min(wordIndex + 1, wordSet.words.length)} of {wordSet.words.length}</span>
-            <span className="tts-badge">{speechSynthesisAvailable ? "Browser voice" : "Voice unavailable"}</span>
+            <div className="word-card-heading">
+              <span className="card-step">02 <span>SAY IT</span></span>
+              <span className={speechSynthesisAvailable ? "tts-badge" : "tts-badge unavailable"}>
+                <span className="voice-status-dot" />
+                {speechSynthesisAvailable ? "Voice ready" : "Voice unavailable"}
+              </span>
+            </div>
+            <span className="word-position">{String(Math.min(wordIndex + 1, wordSet.words.length)).padStart(2, "0")} <span>/ {String(wordSet.words.length).padStart(2, "0")}</span></span>
           </div>
           <div className="word-picture-row">
             <WordPhoto word={currentWord} />
@@ -803,10 +825,13 @@ function PracticePage(props: {
                 />
                 {isSpeaking && <button className="quiet-button" onClick={stopSpeaking}>Stop</button>}
               </div>
+              {isSpeaking && <span className="speaking-status" aria-live="polite"><i /><i /><i /> Speaking the word</span>}
               {!speechSynthesisAvailable && <p className="helper-text">Text-to-speech is not available in this browser.</p>}
             </div>
           </div>
-          <div className="voice-settings">
+          <details className="voice-settings">
+            <summary>Voice options <span>Choose a voice and adjust speed</span></summary>
+            <div className="voice-options-grid">
             <label className="voice-field" htmlFor="speech-voice">
               <span>Voice</span>
               <select
@@ -838,7 +863,8 @@ function PracticePage(props: {
               />
               <span className="speed-hints"><span>Slower</span><span>Faster</span></span>
             </label>
-          </div>
+            </div>
+          </details>
           <div style={styles.field}>
             <div style={styles.row}>
               <label style={styles.fieldLabel} htmlFor="transcript">What did you say?</label>
@@ -878,7 +904,7 @@ function PracticePage(props: {
         </section>
       </div>
       <div className="word-chips" aria-label="Words in this practice set">
-        {wordSet.words.map((word, index) => <button key={`${word}-${index}`} className={`word-chip ${index === wordIndex ? "word-chip-active" : ""}`} onClick={() => { setWordIndex(index); setTranscript(""); setSpeechResult(null); }}>{index + 1}. {word}</button>)}
+        {wordSet.words.map((word, index) => <button key={`${word}-${index}`} className={`word-chip ${index === wordIndex ? "word-chip-active" : ""}`} disabled={Boolean(speechResult && !speechResult.correct && index !== wordIndex)} title={speechResult && !speechResult.correct && index !== wordIndex ? "Match this word before moving on" : undefined} onClick={() => { setWordIndex(index); setTranscript(""); setSpeechResult(null); }}>{index + 1}. {word}</button>)}
       </div>
     </section>
   );

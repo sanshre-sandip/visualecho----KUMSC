@@ -1,6 +1,6 @@
 # VisualEcho Backend
 
-Secure FastAPI gateway for VisualEcho's **cloud** LLM mode.
+Secure FastAPI gateway for VisualEcho's **cloud** LLM mode using Gemma 4 via the Gemini API.
 
 ```text
 React Native (VisualEcho)
@@ -9,7 +9,7 @@ React Native (VisualEcho)
 VisualEcho FastAPI Backend   <- server-side API key lives here
         |
         v
-Google Gemini API
+Gemini API -> Gemma 4
 ```
 
 The mobile app never receives, stores, or logs a Gemini API key.

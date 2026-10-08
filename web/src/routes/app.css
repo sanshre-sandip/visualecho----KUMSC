@@ -67,9 +67,13 @@
 .feedback-box p { margin: 5px 0; font-size: 13px; line-height: 1.55; }
 .feedback-box span, .feedback-box small { display: block; color: #4a6650; font-size: 11px; }
 .feedback-box small { margin-top: 7px; }
+.learning-prompt { margin-top: 8px; padding-top: 8px; border-top: 1px solid #d9e8da; }
+.learning-prompt > p { color: #315c3a; }
+.learning-actions { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 4px -8px; }
 .word-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .word-chip { padding: 8px 11px; border: 1px solid #d6dce1; border-radius: 30px; color: #4a5560; background: #fff; font-size: 12px; cursor: pointer; }
 .word-chip-active { border-color: #1b5e8c; color: #1b5e8c; background: #f0f6fa; }
+.word-chip:disabled { opacity: .5; cursor: not-allowed; }
 .drawing-canvas { width: 100%; height: auto; display: block; margin-top: 15px; border: 1px solid #d6dce1; border-radius: 9px; background: #fffdf8; touch-action: none; cursor: crosshair; }
 .canvas-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; }
 .canvas-actions p { max-width: 400px; margin: 0; color: #4a5560; font-size: 12px; line-height: 1.55; }

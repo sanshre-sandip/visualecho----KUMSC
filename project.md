@@ -13,7 +13,7 @@ The application combines:
 * Speech-to-Text
 * Text-to-Speech
 * Digital Signal Processing (DSP)
-* Gemma 4 multimodal AI
+* Gemma 4 multimodal AI via the Gemini API
 * Local progress tracking
 * Optional drawing activities
 * A provider architecture that allows users to choose between local models, custom APIs, and Google services
@@ -91,13 +91,13 @@ Gemma 4
 Possible execution modes:
 
 ```text
-Local Gemma
+Gemma 4
      │
-     ├── Device/local server
+     ├── Local Gemma / local server
      │
      ├── Custom API
      │
-     └── Google service
+     └── Gemini API access
 ```
 
 ## Speech-to-Text
