@@ -166,11 +166,15 @@ export class ExpoFileSystemModelStorage implements ModelStorage {
       metadata.modelId !== definition.id ||
       definition.version === null ||
       metadata.version !== definition.version ||
+      (definition.sizeBytes !== null && metadata.sizeBytes !== definition.sizeBytes) ||
       definition.expectedFiles === null ||
       definition.expectedFiles.length === 0 ||
       metadata.format !== definition.format ||
       metadata.runtime !== definition.runtime ||
       metadata.platform !== definition.platform ||
+      (definition.downloadSource !== null &&
+        metadata.sourceUrl !== definition.downloadSource.url) ||
+      (metadata.sourceUrl !== null && !metadata.sourceUrl.startsWith("https://")) ||
       metadata.files.length !== definition.expectedFiles.length
     ) {
       return false;

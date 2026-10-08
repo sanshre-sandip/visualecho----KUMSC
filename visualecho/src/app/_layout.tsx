@@ -71,9 +71,32 @@ export default function RootLayout() {
           setRequiredModels(models);
           setModelStatuses(statuses);
           setSetupMessage("Required models are missing or invalid. Set them up again to continue.");
+          setSetupPhase("idle");
           setSetupStep("setup-progress");
-          await saveConfiguration({ ...config, setupCompleted: false });
+          await saveConfiguration({ ...config, setupCompleted: false, setupStarted: true });
         }
+      } else if (config.setupStarted) {
+        const models = await modelManager.getRequiredModels(config);
+        const statuses = await Promise.all(
+          models.map(async (model) =>
+            (await modelManager.getModelStatus(model.id)) ?? {
+              modelId: model.id,
+              state: "not_installed" as const,
+              progress: null,
+              error: null,
+              errorCode: null,
+              installedVersion: null,
+            },
+          ),
+        );
+        if (!mounted) {
+          return;
+        }
+        setRequiredModels(models);
+        setModelStatuses(statuses);
+        setSetupMessage("Previous setup did not finish. Review model status and retry when ready.");
+        setSetupPhase("idle");
+        setSetupStep("setup-progress");
       } else {
         setSetupStep("welcome");
       }
@@ -96,6 +119,7 @@ export default function RootLayout() {
     setupController.current = controller;
     const config: AppConfiguration = {
       setupCompleted: false,
+      setupStarted: true,
       aiMode,
       sttMode: "local",
       ttsMode: "local",
@@ -107,7 +131,11 @@ export default function RootLayout() {
     setModelStatuses([]);
 
     try {
-      await saveConfiguration(config);
+      if (!(await saveConfiguration(config))) {
+        setSetupPhase("error");
+        setSetupMessage("Setup progress could not be saved. Check app storage and retry.");
+        return;
+      }
       const models = await modelManager.getRequiredModels(config);
       setRequiredModels(models);
       const initialStatuses = await Promise.all(
@@ -146,7 +174,11 @@ export default function RootLayout() {
 
       const missing = await modelManager.getMissingModels(config);
       if (missing.length === 0) {
-        await saveConfiguration({ ...config, setupCompleted: true });
+        if (!(await saveConfiguration({ ...config, setupCompleted: true, setupStarted: false }))) {
+          setSetupPhase("error");
+          setSetupMessage("Setup could not be saved. Retry before continuing to Home.");
+          return;
+        }
         setSetupPhase("complete");
       } else {
         setSetupPhase("error");
@@ -192,6 +224,7 @@ export default function RootLayout() {
                   const selectedMode = normalizeAIMode(mode);
                   const newConfig: AppConfiguration = {
                     setupCompleted: false,
+                    setupStarted: false,
                     aiMode: selectedMode,
                     sttMode: "local",
                     ttsMode: "local",

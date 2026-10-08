@@ -201,7 +201,8 @@ export class ModelManager {
       : null;
 
     if (availableBytes !== null && requiredBytes !== null && availableBytes < requiredBytes) {
-      const message = "Not enough device storage is available for the selected local models.";
+      const requiredGb = (requiredBytes / 1024 ** 3).toFixed(1);
+      const message = `Not enough storage. VisualEcho needs approximately ${requiredGb} GB for the selected local models.`;
       for (const definition of missing) {
         this.publishStatus(
           this.errorStatus(definition, "insufficient_storage", message),
