@@ -55,10 +55,10 @@ const STARTER_WORDS: WordGenerationResult = {
 
 const styles = {
   shell: {
-    minHeight: "100%",
+    minHeight: "100vh",
     display: "flex",
     flexDirection: "column" as const,
-    background: Colors.light.background,
+    background: "#f7f9fa",
     color: Colors.light.onSurface,
   },
   header: {
@@ -117,7 +117,7 @@ const styles = {
     whiteSpace: "nowrap" as const,
   },
   content: {
-    width: "min(940px, calc(100% - 40px))",
+    width: "min(1080px, calc(100% - 48px))",
     margin: "0 auto",
     padding: `${Spacing.five}px 0`,
     flex: 1,
@@ -210,6 +210,9 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [wordSet, setWordSet] = useState(STARTER_WORDS);
   const [wordIndex, setWordIndex] = useState(0);
+  const [completedWordIndices, setCompletedWordIndices] = useState<Set<number>>(
+    () => new Set(),
+  );
   const [transcript, setTranscript] = useState("");
   const [speechResult, setSpeechResult] = useState<SpeechEvaluationResult | null>(null);
   const [drawingResult, setDrawingResult] = useState("");
@@ -339,6 +342,7 @@ export default function App() {
     setRetryAction(null);
     setWordSet(STARTER_WORDS);
     setWordIndex(0);
+    setCompletedWordIndices(new Set());
     setTranscript("");
     setSpeechResult(null);
     setDrawingResult("");
@@ -354,6 +358,7 @@ export default function App() {
       const result = await provider.generateWords({ topic: topic.trim(), difficulty, count: 5 });
       setWordSet(result);
       setWordIndex(0);
+      setCompletedWordIndices(new Set());
       setRetryAction(null);
     } catch (error) {
       if (mode === "cloud") recordCloudError(error, "words");
@@ -413,6 +418,7 @@ export default function App() {
         ],
       });
       if (result.correct) {
+        setCompletedWordIndices((completed) => new Set(completed).add(wordIndex));
         setWordIndex((index) => Math.min(index + 1, wordSet.words.length - 1));
       }
       setTranscript("");
@@ -539,19 +545,19 @@ export default function App() {
 
   return (
     <div style={styles.shell}>
-      <header style={styles.header}>
+      <header className="app-header" style={styles.header}>
         <Link to="/" style={{ ...styles.brand, textDecoration: "none" }}>
           <span style={styles.logo} aria-hidden="true">v</span>
           <span>VisualEcho</span>
         </Link>
-        <nav style={styles.navigation} aria-label="Main navigation">
+        <nav className="app-navigation" style={styles.navigation} aria-label="Main navigation">
           <NavigationLink to="/" label="Overview" />
           <NavigationLink to="/practice" label="Practice" />
           <NavigationLink to="/drawing" label="Drawing" />
           <NavigationLink to="/progress" label="Progress" />
           <NavigationLink to="/settings" label="Settings" />
         </nav>
-        <div style={styles.status} aria-live="polite">
+        <div className="app-status" style={styles.status} aria-live="polite">
           <span className={`status-indicator ${apiStatus}`} />
           {apiStatus === "checking" ? "Checking API" : apiStatus === "online" ? "API online" : "API unavailable"}
         </div>
@@ -599,6 +605,7 @@ export default function App() {
                 setDifficulty={setDifficulty}
                 wordSet={wordSet}
                 wordIndex={wordIndex}
+                completedWordIndices={completedWordIndices}
                 setWordIndex={setWordIndex}
                 currentWord={currentWord}
                 transcript={transcript}
@@ -737,6 +744,7 @@ function PracticePage(props: {
   setDifficulty: (value: Difficulty) => void;
   wordSet: WordGenerationResult;
   wordIndex: number;
+  completedWordIndices: Set<number>;
   setWordIndex: (value: number) => void;
   currentWord: string;
   transcript: string;
@@ -762,6 +770,7 @@ function PracticePage(props: {
 }) {
   const {
     mode, topic, setTopic, difficulty, setDifficulty, wordSet, wordIndex,
+    completedWordIndices,
     setWordIndex, currentWord, transcript, setTranscript, speechResult,
     setSpeechResult,
     generateWords, evaluateAttempt, speakText, stopSpeaking, availableVoices,
@@ -770,7 +779,7 @@ function PracticePage(props: {
     startSpeechRecognition,
     speechRecognitionAvailable, isListening, isGenerating, isEvaluating,
   } = props;
-  const completedWords = wordSet.words.slice(0, wordIndex).length;
+  const completedWords = completedWordIndices.size;
   return (
     <section>
       <PageHeading eyebrow="Daily practice" title="Find your words" subtitle="One word at a time. Listen, try, and keep going at your own pace." />

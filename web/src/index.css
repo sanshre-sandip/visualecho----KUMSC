@@ -7,7 +7,7 @@
   font-weight: 400;
 
   color: #11181c;
-  background-color: #ffffff;
+  background-color: #f7f9fa;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,9 +24,13 @@
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
+  min-width: 320px;
 }
 
 a {
