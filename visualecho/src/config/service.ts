@@ -12,6 +12,7 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
       const parsed: AppConfiguration = JSON.parse(stored);
       return {
         setupCompleted: parsed.setupCompleted ?? false,
+        setupStarted: parsed.setupStarted ?? false,
         aiMode: parsed.aiMode ?? "local",
         sttMode: parsed.sttMode ?? "local",
         ttsMode: parsed.ttsMode ?? "local",
@@ -19,6 +20,7 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
     }
     return {
       setupCompleted: false,
+      setupStarted: false,
       aiMode: "local",
       sttMode: "local",
       ttsMode: "local",
@@ -27,6 +29,7 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
     console.warn("Failed to load configuration, using defaults", error);
     return {
       setupCompleted: false,
+      setupStarted: false,
       aiMode: "local",
       sttMode: "local",
       ttsMode: "local",
@@ -34,10 +37,12 @@ export async function loadConfiguration(): Promise<AppConfiguration> {
   }
 }
 
-export async function saveConfiguration(config: AppConfiguration): Promise<void> {
+export async function saveConfiguration(config: AppConfiguration): Promise<boolean> {
   try {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    return true;
   } catch (error) {
     console.warn("Failed to save configuration", error);
+    return false;
   }
 }
