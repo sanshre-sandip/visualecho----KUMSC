@@ -29,8 +29,10 @@ and redeploy the backend.
 - **Local demo** uses `MockAIProvider`; it is not local Gemma or image
   recognition.
 - Speech input uses browser speech recognition when available, otherwise
-  typed transcripts. Word playback uses browser speech synthesis when
-  available.
+  typed transcripts. Word playback uses browser speech synthesis with
+  selectable installed voices and adjustable speed; voice availability varies
+  by browser and operating system. Word picture clues are locally generated
+  illustrations and do not require sending searches to an image provider.
 - Drawing uses a browser canvas. Cloud analysis sends the chosen drawing to
   the backend; demo mode does not claim to interpret the image.
 - Practice progress is saved in browser local storage.

@@ -18,6 +18,7 @@ import {
   saveProgress,
   type ProgressData,
 } from "@/services/progress";
+import { getWordIllustration } from "@/services/wordIllustration";
 
 type AIMode = "local" | "cloud";
 type CloudAction = "words" | "speech" | "drawing";
@@ -217,6 +218,10 @@ export default function App() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState("");
+  const [speechRate, setSpeechRate] = useState(0.9);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [storageError, setStorageError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
@@ -247,6 +252,28 @@ export default function App() {
 
   useEffect(() => {
     void refreshHealth();
+  }, []);
+
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const synthesis = window.speechSynthesis;
+    const updateVoices = () => {
+      const voices = synthesis.getVoices();
+      setAvailableVoices(voices);
+      setSelectedVoiceURI((current) => {
+        if (current && voices.some((voice) => voice.voiceURI === current)) return current;
+        return voices.find((voice) => voice.lang.toLowerCase().startsWith("en-us"))?.voiceURI
+          ?? voices.find((voice) => voice.lang.toLowerCase().startsWith("en"))?.voiceURI
+          ?? "";
+      });
+    };
+
+    updateVoices();
+    synthesis.addEventListener("voiceschanged", updateVoices);
+    return () => {
+      synthesis.removeEventListener("voiceschanged", updateVoices);
+      synthesis.cancel();
+    };
   }, []);
 
   useEffect(() => {
@@ -450,8 +477,31 @@ export default function App() {
       setCloudError("Text-to-speech is not available in this browser.");
       return;
     }
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(word));
+    const synthesis = window.speechSynthesis;
+    synthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(word);
+    const voice = availableVoices.find((candidate) => candidate.voiceURI === selectedVoiceURI);
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    } else {
+      utterance.lang = "en-US";
+    }
+    utterance.rate = speechRate;
+    utterance.pitch = 1.05;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setCloudError("Browser text-to-speech could not play this word. Try another voice.");
+    };
+    setCloudError("");
+    synthesis.speak(utterance);
+  }
+
+  function stopSpeaking() {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setIsSpeaking(false);
   }
 
   function retryCloudRequest() {
@@ -541,6 +591,13 @@ export default function App() {
                 generateWords={() => void generateWords()}
                 evaluateAttempt={() => void evaluateAttempt()}
                 speakWord={speakWord}
+                stopSpeaking={stopSpeaking}
+                availableVoices={availableVoices}
+                selectedVoiceURI={selectedVoiceURI}
+                setSelectedVoiceURI={setSelectedVoiceURI}
+                speechRate={speechRate}
+                setSpeechRate={setSpeechRate}
+                isSpeaking={isSpeaking}
                 startSpeechRecognition={startSpeechRecognition}
                 speechRecognitionAvailable={Boolean(speechRecognition)}
                 isListening={isListening}
@@ -670,6 +727,13 @@ function PracticePage(props: {
   generateWords: () => void;
   evaluateAttempt: () => void;
   speakWord: (word: string) => void;
+  stopSpeaking: () => void;
+  availableVoices: SpeechSynthesisVoice[];
+  selectedVoiceURI: string;
+  setSelectedVoiceURI: (voiceURI: string) => void;
+  speechRate: number;
+  setSpeechRate: (rate: number) => void;
+  isSpeaking: boolean;
   startSpeechRecognition: () => void;
   speechRecognitionAvailable: boolean;
   isListening: boolean;
@@ -679,7 +743,9 @@ function PracticePage(props: {
   const {
     mode, topic, setTopic, difficulty, setDifficulty, wordSet, wordIndex,
     setWordIndex, currentWord, transcript, setTranscript, speechResult,
-    generateWords, evaluateAttempt, speakWord, startSpeechRecognition,
+    generateWords, evaluateAttempt, speakWord, stopSpeaking, availableVoices,
+    selectedVoiceURI, setSelectedVoiceURI, speechRate, setSpeechRate, isSpeaking,
+    startSpeechRecognition,
     speechRecognitionAvailable, isListening, isGenerating, isEvaluating,
   } = props;
   return (
@@ -701,9 +767,63 @@ function PracticePage(props: {
           <Button title={isGenerating ? "Finding words…" : mode === "cloud" ? "Ask VisualEcho for words" : "Make a demo word set"} onClick={generateWords} disabled={isGenerating || !topic.trim()} style={{ width: "100%" }} />
           <ProviderNote mode={mode} result={wordSet} />
         </section>
-        <section className="surface-card">
-          <div style={styles.row}><span style={styles.eyebrow}>Word {Math.min(wordIndex + 1, wordSet.words.length)} of {wordSet.words.length}</span><button className="quiet-button" onClick={() => speakWord(currentWord)}>▶ Hear the word</button></div>
-          <div className="practice-word">{currentWord || "Ready?"}</div>
+        <section className="surface-card current-word-card">
+          <div style={styles.row}>
+            <span style={styles.eyebrow}>Word {Math.min(wordIndex + 1, wordSet.words.length)} of {wordSet.words.length}</span>
+            <span className="tts-badge">Browser voice</span>
+          </div>
+          <div className="word-picture-row">
+            <img
+              className="word-picture"
+              src={getWordIllustration(currentWord, wordSet.topic)}
+              alt={`Picture clue for ${currentWord}`}
+            />
+            <div className="word-reading">
+              <div className="practice-word">{currentWord || "Ready?"}</div>
+              <div className="tts-controls">
+                <Button
+                  title={isSpeaking ? "Playing word…" : "Hear the word"}
+                  onClick={() => speakWord(currentWord)}
+                  disabled={!currentWord || isSpeaking}
+                  style={{ minHeight: 44 }}
+                />
+                {isSpeaking && <button className="quiet-button" onClick={stopSpeaking}>Stop</button>}
+              </div>
+            </div>
+          </div>
+          <div className="voice-settings">
+            <label className="voice-field" htmlFor="speech-voice">
+              <span>Voice</span>
+              <select
+                id="speech-voice"
+                value={selectedVoiceURI}
+                onChange={(event) => setSelectedVoiceURI(event.target.value)}
+                disabled={availableVoices.length === 0}
+              >
+                {availableVoices.length === 0
+                  ? <option value="">Default browser voice</option>
+                  : availableVoices.map((voice) => (
+                    <option key={voice.voiceURI} value={voice.voiceURI}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="voice-field rate-field" htmlFor="speech-rate">
+              <span>Speaking speed <strong>{speechRate.toFixed(1)}×</strong></span>
+              <input
+                id="speech-rate"
+                type="range"
+                min="0.75"
+                max="1.15"
+                step="0.05"
+                value={speechRate}
+                onChange={(event) => setSpeechRate(Number(event.target.value))}
+                aria-label="Speaking speed"
+              />
+              <span className="speed-hints"><span>Slower</span><span>Faster</span></span>
+            </label>
+          </div>
           <div style={styles.field}>
             <div style={styles.row}>
               <label style={styles.fieldLabel} htmlFor="transcript">What did you say?</label>
