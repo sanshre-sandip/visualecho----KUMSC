@@ -5,17 +5,18 @@ export default function LocalComponentsScreen({ onContinue }: { onContinue: () =
     <View style={styles.container}>
       <Text style={styles.title}>Local audio processing</Text>
       <Text style={styles.subtext}>
-        Speech recognition and voice generation stay on your device.
+        Speech recognition and voice generation are intended to stay on your device. Their
+        Android-compatible models and runtimes are not available in this build.
       </Text>
 
       <View style={styles.componentBox}>
         <Text style={styles.componentLabel}>Speech Recognition</Text>
-        <Text style={styles.componentValue}>Local Whisper</Text>
+        <Text style={styles.componentValue}>Whisper · Not installed</Text>
       </View>
 
       <View style={styles.componentBox}>
         <Text style={styles.componentLabel}>Text to Speech</Text>
-        <Text style={styles.componentValue}>Local TTS</Text>
+        <Text style={styles.componentValue}>Local TTS · Not installed</Text>
       </View>
 
       <Text style={styles.note}>These are required components and cannot be disabled.</Text>

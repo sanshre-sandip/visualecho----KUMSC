@@ -11,16 +11,14 @@ export default function ChooseAIScreen({ onSelect }: { onSelect: (mode: string) 
 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("local")}>
         <Text style={styles.cardText}>Private & Offline</Text>
-        <Text style={styles.cardSubtext}>Run Gemma locally on your device.</Text>
-        <Text style={styles.cardSubtext}>Works without an internet connection.</Text>
-        <Text style={styles.cardSubtext}>No account required.</Text>
+        <Text style={styles.cardSubtext}>Gemma&apos;s Android model source and runtime have not been selected yet.</Text>
+        <Text style={styles.cardSubtext}>This mode cannot be prepared on this build.</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} onPress={() => handlePress("cloud")}>
         <Text style={styles.cardText}>Cloud AI</Text>
-        <Text style={styles.cardSubtext}>Use a cloud-based language model for AI reasoning.</Text>
-        <Text style={styles.cardSubtext}>Requires an internet connection.</Text>
-        <Text style={styles.cardSubtext}>Account setup will be required later.</Text>
+        <Text style={styles.cardSubtext}>Requires a configured VisualEcho backend.</Text>
+        <Text style={styles.cardSubtext}>Whisper and text-to-speech remain local-only.</Text>
       </TouchableOpacity>
     </View>
   );
