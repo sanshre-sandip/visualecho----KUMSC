@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, SafeAreaView, StatusBar } from "react-native";
 import { DarkTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import WelcomeScreen from "./welcome";
